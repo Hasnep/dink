@@ -1,69 +1,50 @@
 use bevy::{
-    asset::LoadState,
-    input::system::exit_on_esc_system,
+    diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin},
     prelude::*,
-    sprite::{TextureAtlas, TextureAtlasBuilder},
-    window::WindowMode,
 };
-use bevy_tilemap::prelude::*;
-use std::cmp::{max, min};
+use bevy_ecs_tilemap::prelude::*;
 
-const CHUNK_WIDTH: u32 = 8;
-const CHUNK_HEIGHT: u32 = 8;
-const TILEMAP_WIDTH: u32 = CHUNK_WIDTH * 2;
-const TILEMAP_HEIGHT: u32 = CHUNK_HEIGHT * 2;
+const MAP_ID: u16 = 0;
+const TILES_LAYER_ID: u16 = 0;
 
-#[derive(Default, Clone)]
-struct SpriteHandles {
-    handles: Vec<HandleUntyped>,
-}
+mod camera;
+mod texture;
 
-// #[derive(Default, Clone)]
-// struct GameState {
-//     map_loaded: bool,
-//     spawned: bool,
-// }
-
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Copy)]
 struct Position {
     x: i32,
     y: i32,
 }
 
 #[derive(Clone, Debug)]
-struct Render {
-    sprite_index: usize,
-    sprite_order: usize,
-}
-
-#[derive(Clone, Debug)]
 struct Player {}
 
 fn main() {
+    env_logger::Builder::from_default_env()
+        .filter_level(log::LevelFilter::Info)
+        .init();
+
     App::build()
         .insert_resource(WindowDescriptor {
-            title: "Roguelike".to_string(),
             width: (1920 / 2) as f32,
             height: (1080 / 2) as f32,
-            vsync: false,
-            resizable: true,
-            mode: WindowMode::Windowed,
+            title: String::from("Roguelike"),
             ..Default::default()
         })
-        .init_resource::<SpriteHandles>()
         .add_plugins(DefaultPlugins)
-        .add_plugins(TilemapDefaultPlugins)
-        .add_startup_system(get_sprite_handles.system())
-        .add_startup_system(spawn_player.system())
-        .add_startup_system(create_camera.system())
-        .add_startup_system(load_textures_and_create_tilemap.system())
-        .add_startup_system(add_wall_tiles.system())
-        .add_system(player_input.system())
-        .add_system(exit_on_esc_system.system())
+        .add_plugin(LogDiagnosticsPlugin::default())
+        .add_plugin(FrameTimeDiagnosticsPlugin::default())
+        .add_plugin(TilemapPlugin)
+        .add_startup_system(setup.system())
+        .add_startup_system(add_camera.system())
+        .add_startup_system(add_player.system())
+        .add_system(player_movement.system())
+        .add_system(camera::movement.system())
+        .add_system(texture::set_texture_filters_to_nearest.system())
         .run();
 }
 
-fn spawn_player(mut commands: Commands) {
+fn add_player(mut commands: Commands) {
     commands.spawn_bundle((
         Position { x: 2, y: 2 },
         Player {},
@@ -74,163 +55,133 @@ fn spawn_player(mut commands: Commands) {
     ));
 }
 
-fn player_input(
-    keys: Res<Input<KeyCode>>,
-    mut player_position: Query<&mut Position, With<Player>>,
-) {
-    if keys.just_released(KeyCode::Left) {
-        try_to_move_player(-1, 0, &mut player_position);
-    }
-    if keys.just_released(KeyCode::Right) {
-        try_to_move_player(1, 0, &mut player_position);
-    }
-    if keys.just_released(KeyCode::Up) {
-        try_to_move_player(0, -1, &mut player_position);
-    }
-    if keys.just_released(KeyCode::Down) {
-        try_to_move_player(0, 1, &mut player_position);
-    }
-}
-
 fn try_to_move_player(
     delta_x: i32,
     delta_y: i32,
     player_position: &mut Query<&mut Position, With<Player>>,
+    commands: &mut Commands,
+    map_query: &mut MapQuery,
 ) {
     for mut pos in player_position.iter_mut() {
-        pos.x = min(79, max(0, pos.x + delta_x));
-        pos.y = min(49, max(0, pos.y + delta_y));
+        let from = *pos;
+        pos.x = pos.x + delta_x;
+        pos.y = pos.y + delta_y;
         println!("Player moved to {},{}", pos.x, pos.y);
+        move_tile(from, *pos, commands, map_query)
     }
 }
 
-// fn move_sprite(
-//     map: &mut Tilemap,
-//     previous_position: Position,
-//     position: Position,
-//     render: &Render,
-// ) {
-//     map.clear_tile((previous_position.x, previous_position.y), 1)
-//         .unwrap();
-//     let tile = Tile {
-//         point: (position.x, position.y),
-//         sprite_index: render.sprite_index,
-//         sprite_order: render.sprite_order,
-//         ..Default::default()
-//     };
-//     map.insert_tile(tile).unwrap();
-// }
-
-fn get_sprite_handles(mut sprite_handles: ResMut<SpriteHandles>, asset_server: Res<AssetServer>) {
-    sprite_handles.handles = asset_server.load_folder("textures").unwrap();
-}
-
-fn load_textures_and_create_tilemap(
-    mut commands: Commands,
-    sprite_handles: Res<SpriteHandles>,
-    mut texture_atlases: ResMut<Assets<TextureAtlas>>,
-    mut textures: ResMut<Assets<Texture>>,
-    asset_server: Res<AssetServer>,
-) {
-    // Load textures
-    let mut texture_atlas_builder = TextureAtlasBuilder::default();
-    if let LoadState::Loaded =
-        asset_server.get_group_load_state(sprite_handles.handles.iter().map(|handle| handle.id))
-    {
-        for handle in sprite_handles.handles.iter() {
-            let texture = textures.get(handle).unwrap();
-            texture_atlas_builder.add_texture(handle.clone_weak().typed::<Texture>(), &texture);
-        }
-
-        let texture_atlas = texture_atlas_builder.finish(&mut textures).unwrap();
-        let atlas_handle = texture_atlases.add(texture_atlas);
-
-        // let mut tilemap = Tilemap::default();
-        // tilemap.set_texture_atlas(atlas_handle);
-
-        let tilemap = Tilemap::builder()
-            // Square grid
-            .topology(GridTopology::Square)
-            // Set the shape of the overall tilemap
-            .dimensions(TILEMAP_WIDTH, TILEMAP_HEIGHT)
-            // Set the shape of each chunk
-            .chunk_dimensions(CHUNK_WIDTH, CHUNK_HEIGHT, 1)
-            // AUtomatically create chunks
-            .auto_chunk()
-            // Add layers for tiles and player
-            .add_layer(
-                TilemapLayer {
-                    kind: LayerKind::Dense,
-                },
-                0,
-            )
-            .add_layer(
-                TilemapLayer {
-                    kind: LayerKind::Sparse,
-                },
-                1,
-            )
-            // Set the texture properties
-            .texture_atlas(atlas_handle)
-            .texture_dimensions(32, 32)
-            // Finish defining the tilemap
-            .finish()
-            .unwrap();
-
-        let tilemap_components = TilemapBundle {
-            tilemap,
-            visible: Visible {
-                is_visible: true,
-                is_transparent: true,
+fn move_tile(from: Position, to: Position, commands: &mut Commands, map_query: &mut MapQuery) {
+    let from = UVec2::new(from.x as u32, from.y as u32);
+    let to = UVec2::new(to.x as u32, to.y as u32);
+    let _ = map_query
+        .get_tile_entity(from, MAP_ID, TILES_LAYER_ID)
+        .expect("Tried to move a tile that doesn't exist!");
+    let _ = map_query
+        .despawn_tile(commands, from, MAP_ID, TILES_LAYER_ID)
+        .expect("Oh no something went wrong with de-spawning a tile!");
+    let _ = map_query
+        .set_tile(
+            commands,
+            to,
+            Tile {
+                texture_index: 1u16,
+                ..Default::default()
             },
-            transform: Default::default(),
-            global_transform: Default::default(),
-        };
-
-        commands.spawn().insert_bundle(tilemap_components);
-    }
+            MAP_ID,
+            TILES_LAYER_ID,
+        )
+        .expect("Couldn't set the new tile!");
+    map_query.notify_chunk_for_tile(from, MAP_ID, TILES_LAYER_ID);
+    map_query.notify_chunk_for_tile(to, MAP_ID, TILES_LAYER_ID);
 }
 
-fn create_camera(mut commands: Commands) {
-    commands
-        .spawn()
-        .insert_bundle(OrthographicCameraBundle::new_2d());
-}
-
-fn add_wall_tiles(
-    texture_atlases: Res<Assets<TextureAtlas>>,
-    asset_server: Res<AssetServer>,
-    mut tilemap_query: Query<&mut Tilemap>,
+fn player_movement(
+    keys: Res<Input<KeyCode>>,
+    mut player_position_query: Query<&mut Position, With<Player>>,
+    mut commands: Commands,
+    mut map_query: MapQuery,
 ) {
-    println!("Adding the walls to the tilemap.");
-    for mut map in tilemap_query.iter_mut() {
-        println!("Getting the wall texture.");
-
-        // Get wall texture
-        let texture_atlas = texture_atlases.get(map.texture_atlas()).unwrap();
-        let wall_texture: Handle<Texture> = asset_server.get_handle("textures/square-wall.png");
-        let wall_texture_index = texture_atlas.get_texture_index(&wall_texture).unwrap();
-
-        let chunk_width = (map.width().unwrap() * map.chunk_width()) as i32;
-        let chunk_height = (map.height().unwrap() * map.chunk_height()) as i32;
-
-        println!("{} by {}", chunk_width, chunk_height);
-
-        // let mut tiles_to_add = Vec::new();
-        for x in 1..100 {
-            for y in 1..100 {
-                // let x = x - chunk_width / 2;
-                // let y = y - chunk_height / 2;
-
-                let tile = Tile {
-                    point: (x, y),
-                    sprite_index: wall_texture_index,
-                    ..Default::default()
-                };
-                // tiles_to_add.push(tile);
-                map.insert_tile(tile).unwrap();
-            }
-        }
-        // map.insert_tiles(tiles_to_add).unwrap();
+    // player_position_query
+    if keys.just_released(KeyCode::Left) {
+        try_to_move_player(
+            -1,
+            0,
+            &mut player_position_query,
+            &mut commands,
+            &mut map_query,
+        );
+    } else if keys.just_released(KeyCode::Right) {
+        try_to_move_player(
+            1,
+            0,
+            &mut player_position_query,
+            &mut commands,
+            &mut map_query,
+        );
+    } else if keys.just_released(KeyCode::Up) {
+        try_to_move_player(
+            0,
+            1,
+            &mut player_position_query,
+            &mut commands,
+            &mut map_query,
+        );
+    } else if keys.just_released(KeyCode::Down) {
+        try_to_move_player(
+            0,
+            -1,
+            &mut player_position_query,
+            &mut commands,
+            &mut map_query,
+        );
     }
+}
+
+fn add_camera(mut commands: Commands) {
+    commands.spawn_bundle(OrthographicCameraBundle::new_2d());
+}
+
+fn setup(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    mut materials: ResMut<Assets<ColorMaterial>>,
+    mut map_query: MapQuery,
+) {
+    let texture_handle = asset_server.load("textures/textures.png");
+    let material_handle = materials.add(ColorMaterial::texture(texture_handle));
+
+    // Create map entity and component:
+    let map_entity = commands.spawn().id();
+    let mut map = Map::new(MAP_ID, map_entity);
+
+    // Creates a new layer builder with a layer entity.
+    let (mut layer_builder, _) = LayerBuilder::new(
+        &mut commands,
+        LayerSettings::new(
+            UVec2::new(2, 2),
+            UVec2::new(8, 8),
+            Vec2::new(32., 32.),
+            Vec2::new(64., 32.),
+        ),
+        MAP_ID,
+        TILES_LAYER_ID,
+    );
+
+    layer_builder.set_all(TileBundle::default());
+
+    // Builds the layer.
+    // Note: Once this is called you can no longer edit the layer until a hard sync in bevy.
+    let layer_entity = map_query.build_layer(&mut commands, layer_builder, material_handle);
+
+    // Required to keep track of layers for a map internally.
+    map.add_layer(&mut commands, TILES_LAYER_ID, layer_entity);
+
+    // Spawn Map
+    // Required in order to use map_query to retrieve layers/tiles.
+    commands
+        .entity(map_entity)
+        .insert(map)
+        .insert(Transform::from_xyz(-128.0, -128.0, 0.0))
+        .insert(GlobalTransform::default());
 }
