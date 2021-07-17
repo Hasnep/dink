@@ -3,9 +3,16 @@ use bevy::{
     prelude::*,
 };
 use bevy_ecs_tilemap::prelude::*;
+use noise::{Fbm, NoiseFn};
 
 const MAP_ID: u16 = 0;
 const TILES_LAYER_ID: u16 = 0;
+const WALL_TEXTURE_INDEX: u16 = 0;
+const PLAYER_TEXTURE_INDEX: u16 = 1;
+const CHUNK_SIZE: u32 = 8;
+const TILE_SIZE: f32 = 32 as f32;
+const N_CHUNKS_X: u32 = 5;
+const N_CHUNKS_Y: u32 = 5;
 
 mod camera;
 mod texture;
@@ -66,7 +73,6 @@ fn try_to_move_player(
         let from = *pos;
         pos.x = pos.x + delta_x;
         pos.y = pos.y + delta_y;
-        println!("Player moved to {},{}", pos.x, pos.y);
         move_tile(from, *pos, commands, map_query)
     }
 }
@@ -85,7 +91,7 @@ fn move_tile(from: Position, to: Position, commands: &mut Commands, map_query: &
             commands,
             to,
             Tile {
-                texture_index: 1u16,
+                texture_index: PLAYER_TEXTURE_INDEX,
                 ..Default::default()
             },
             MAP_ID,
@@ -156,19 +162,42 @@ fn setup(
     let mut map = Map::new(MAP_ID, map_entity);
 
     // Creates a new layer builder with a layer entity.
-    let (mut layer_builder, _) = LayerBuilder::new(
+    let (mut layer_builder, _) = LayerBuilder::<TileBundle>::new(
         &mut commands,
         LayerSettings::new(
-            UVec2::new(2, 2),
-            UVec2::new(8, 8),
-            Vec2::new(32., 32.),
-            Vec2::new(64., 32.),
+            UVec2::new(N_CHUNKS_X, N_CHUNKS_Y),
+            UVec2::new(CHUNK_SIZE, CHUNK_SIZE),
+            Vec2::new(TILE_SIZE, TILE_SIZE),
+            Vec2::new((2 as f32) * TILE_SIZE, TILE_SIZE),
         ),
         MAP_ID,
         TILES_LAYER_ID,
     );
+    // map.add_layer(&mut commands, 0u16, layer_entity);
 
-    layer_builder.set_all(TileBundle::default());
+    // // Fill the map with walls
+    // layer_builder.set_all(TileBundle::default());
+
+    // Construct a noise generator
+    let mut noise = Fbm::new();
+    noise.frequency = 0.15;
+
+    for i in 0..(N_CHUNKS_X * CHUNK_SIZE) {
+        for j in 0..(N_CHUNKS_Y * CHUNK_SIZE) {
+            let noise_value = noise.get([i as f64, j as f64]);
+            println!("Noise at {},{} is {}", i, j, noise_value);
+            if noise_value > 0.0 {
+                let tile = Tile {
+                    texture_index: WALL_TEXTURE_INDEX,
+                    ..Default::default()
+                };
+                let _ = layer_builder
+                    .set_tile(UVec2::new(i, j), tile.into())
+                    .expect("Couldn't set tile! :(");
+            }
+        }
+    }
+    // layer_builder.set_tile(UVec2::new(1,1),  Tile {texture_index: WALL_TEXTURE_INDEX,..Default::default()},);
 
     // Builds the layer.
     // Note: Once this is called you can no longer edit the layer until a hard sync in bevy.
