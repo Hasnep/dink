@@ -11,8 +11,8 @@ const WALL_TEXTURE_INDEX: u16 = 0;
 const PLAYER_TEXTURE_INDEX: u16 = 1;
 const CHUNK_SIZE: u32 = 8;
 const TILE_SIZE: f32 = 32 as f32;
-const N_CHUNKS_X: u32 = 5;
-const N_CHUNKS_Y: u32 = 5;
+const N_CHUNKS_X: u32 = 10;
+const N_CHUNKS_Y: u32 = 10;
 
 mod camera;
 mod texture;
@@ -71,10 +71,33 @@ fn try_to_move_player(
 ) {
     for mut pos in player_position.iter_mut() {
         let from = *pos;
-        pos.x = pos.x + delta_x;
-        pos.y = pos.y + delta_y;
-        move_tile(from, *pos, commands, map_query)
+        let to = Position {
+            x: from.x + delta_x,
+            y: from.y + delta_y,
+        };
+
+        let to_tile =
+            map_query.get_tile_entity(UVec2::new(to.x as u32, to.y as u32), MAP_ID, TILES_LAYER_ID);
+
+        if to_tile.is_ok() {
+            // If that space has a tile then destroy it
+            destroy_tile(to, commands, map_query);
+        } else {
+            // If that space is empty then move the player
+            pos.x = to.x;
+            pos.y = to.y;
+
+            move_tile(from, to, commands, map_query)
+        }
     }
+}
+
+fn destroy_tile(tile_position: Position, commands: &mut Commands, map_query: &mut MapQuery) {
+    let tile_position = UVec2::new(tile_position.x as u32, tile_position.y as u32);
+    let _ = map_query
+        .despawn_tile(commands, tile_position, MAP_ID, TILES_LAYER_ID)
+        .expect("Oh no something went wrong with de-spawning a tile!");
+    map_query.notify_chunk_for_tile(tile_position, MAP_ID, TILES_LAYER_ID);
 }
 
 fn move_tile(from: Position, to: Position, commands: &mut Commands, map_query: &mut MapQuery) {
@@ -180,12 +203,11 @@ fn setup(
 
     // Construct a noise generator
     let mut noise = Fbm::new();
-    noise.frequency = 0.15;
+    noise.frequency = 0.1;
 
     for i in 0..(N_CHUNKS_X * CHUNK_SIZE) {
         for j in 0..(N_CHUNKS_Y * CHUNK_SIZE) {
             let noise_value = noise.get([i as f64, j as f64]);
-            println!("Noise at {},{} is {}", i, j, noise_value);
             if noise_value > 0.0 {
                 let tile = Tile {
                     texture_index: WALL_TEXTURE_INDEX,
