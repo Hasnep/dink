@@ -22,7 +22,6 @@
 
 use bevy::{prelude::*, render::texture::FilterMode};
 
-
 pub fn set_texture_filters_to_nearest(
     mut texture_events: EventReader<AssetEvent<Texture>>,
     mut textures: ResMut<Assets<Texture>>,

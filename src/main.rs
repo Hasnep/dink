@@ -17,8 +17,7 @@ const N_TEXTURES: i32 = 3;
 const N_CHUNKS_X: u32 = 10;
 const N_CHUNKS_Y: u32 = 10;
 
-mod camera;
-mod texture;
+mod helpers;
 
 #[derive(Clone, Debug, Copy)]
 struct Position {
@@ -60,8 +59,8 @@ fn main() {
         .add_startup_system_to_stage(StartupStage::PreStartup, add_enemy.system())
         .add_startup_system(setup.system()) // Create tilemap
         .add_system(player_movement.system())
-        .add_system(camera::movement.system())
-        .add_system(texture::set_texture_filters_to_nearest.system())
+        .add_system(helpers::camera::movement.system())
+        .add_system(helpers::texture::set_texture_filters_to_nearest.system())
         .run();
 }
 
