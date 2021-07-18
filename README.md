@@ -1,7 +1,12 @@
+# Dink
+
+A test roguelike game using the [Bevy engine](https://bevyengine.org/).
+
+## Running
+
+If you don't have Rust, you can install it using [rustup](https://rustup.rs).
+Then run
+
 ```shell
-sudo apt install -y lld
-rustup toolchain install nightly
-rustup override set nightly
-mkdir -p .cargo/
-curl https://raw.githubusercontent.com/bevyengine/bevy/main/.cargo/config_fast_builds > .cargo/config
+cargo run
 ```
