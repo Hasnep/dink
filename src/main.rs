@@ -1,5 +1,6 @@
 use bevy::{
     diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin},
+    input::system::exit_on_esc_system,
     prelude::*,
 };
 use bevy_ecs_tilemap::prelude::*;
@@ -9,8 +10,10 @@ const MAP_ID: u16 = 0;
 const TILES_LAYER_ID: u16 = 0;
 const WALL_TEXTURE_INDEX: u16 = 0;
 const PLAYER_TEXTURE_INDEX: u16 = 1;
+const ENEMY_TEXTURE_INDEX: u16 = 2;
 const CHUNK_SIZE: u32 = 8;
 const TILE_SIZE: f32 = 32 as f32;
+const N_TEXTURES: i32 = 3;
 const N_CHUNKS_X: u32 = 10;
 const N_CHUNKS_Y: u32 = 10;
 
@@ -19,12 +22,20 @@ mod texture;
 
 #[derive(Clone, Debug, Copy)]
 struct Position {
-    x: i32,
-    y: i32,
+    x: u32,
+    y: u32,
 }
 
 #[derive(Clone, Debug)]
 struct Player {}
+
+#[derive(Clone, Debug)]
+struct Enemy {}
+
+#[derive(Clone, Debug)]
+struct Drawable {
+    texture_index: u16,
+}
 
 fn main() {
     env_logger::Builder::from_default_env()
@@ -39,12 +50,15 @@ fn main() {
             ..Default::default()
         })
         .add_plugins(DefaultPlugins)
+        .add_system(exit_on_esc_system.system())
         .add_plugin(LogDiagnosticsPlugin::default())
         .add_plugin(FrameTimeDiagnosticsPlugin::default())
         .add_plugin(TilemapPlugin)
-        .add_startup_system(setup.system())
         .add_startup_system(add_camera.system())
-        .add_startup_system(add_player.system())
+        // We need to add the drawable entities before we draw the tilemap
+        .add_startup_system_to_stage(StartupStage::PreStartup, add_player.system())
+        .add_startup_system_to_stage(StartupStage::PreStartup, add_enemy.system())
+        .add_startup_system(setup.system()) // Create tilemap
         .add_system(player_movement.system())
         .add_system(camera::movement.system())
         .add_system(texture::set_texture_filters_to_nearest.system())
@@ -53,12 +67,21 @@ fn main() {
 
 fn add_player(mut commands: Commands) {
     commands.spawn_bundle((
-        Position { x: 2, y: 2 },
+        Position { x: 2, y: 4 },
         Player {},
-        // Render {
-        //     sprite_index: dwarf_sprite_index,
-        //     sprite_order: 1,
-        // },
+        Drawable {
+            texture_index: PLAYER_TEXTURE_INDEX,
+        },
+    ));
+}
+
+fn add_enemy(mut commands: Commands) {
+    commands.spawn_bundle((
+        Position { x: 4, y: 4 },
+        Enemy {},
+        Drawable {
+            texture_index: ENEMY_TEXTURE_INDEX,
+        },
     ));
 }
 
@@ -72,12 +95,11 @@ fn try_to_move_player(
     for mut pos in player_position.iter_mut() {
         let from = *pos;
         let to = Position {
-            x: from.x + delta_x,
-            y: from.y + delta_y,
+            x: ((from.x as i32) + delta_x) as u32,
+            y: ((from.y as i32) + delta_y) as u32,
         };
 
-        let to_tile =
-            map_query.get_tile_entity(UVec2::new(to.x as u32, to.y as u32), MAP_ID, TILES_LAYER_ID);
+        let to_tile = map_query.get_tile_entity(UVec2::new(to.x, to.y), MAP_ID, TILES_LAYER_ID);
 
         if to_tile.is_ok() {
             // If that space has a tile then destroy it
@@ -93,7 +115,7 @@ fn try_to_move_player(
 }
 
 fn destroy_tile(tile_position: Position, commands: &mut Commands, map_query: &mut MapQuery) {
-    let tile_position = UVec2::new(tile_position.x as u32, tile_position.y as u32);
+    let tile_position = UVec2::new(tile_position.x, tile_position.y);
     let _ = map_query
         .despawn_tile(commands, tile_position, MAP_ID, TILES_LAYER_ID)
         .expect("Oh no something went wrong with de-spawning a tile!");
@@ -101,8 +123,8 @@ fn destroy_tile(tile_position: Position, commands: &mut Commands, map_query: &mu
 }
 
 fn move_tile(from: Position, to: Position, commands: &mut Commands, map_query: &mut MapQuery) {
-    let from = UVec2::new(from.x as u32, from.y as u32);
-    let to = UVec2::new(to.x as u32, to.y as u32);
+    let from = UVec2::new(from.x, from.y);
+    let to = UVec2::new(to.x, to.y);
     let _ = map_query
         .get_tile_entity(from, MAP_ID, TILES_LAYER_ID)
         .expect("Tried to move a tile that doesn't exist!");
@@ -176,6 +198,7 @@ fn setup(
     asset_server: Res<AssetServer>,
     mut materials: ResMut<Assets<ColorMaterial>>,
     mut map_query: MapQuery,
+    drawable_query: Query<(&Position, &Drawable)>,
 ) {
     let texture_handle = asset_server.load("textures/textures.png");
     let material_handle = materials.add(ColorMaterial::texture(texture_handle));
@@ -191,7 +214,7 @@ fn setup(
             UVec2::new(N_CHUNKS_X, N_CHUNKS_Y),
             UVec2::new(CHUNK_SIZE, CHUNK_SIZE),
             Vec2::new(TILE_SIZE, TILE_SIZE),
-            Vec2::new((2 as f32) * TILE_SIZE, TILE_SIZE),
+            Vec2::new((N_TEXTURES as f32) * TILE_SIZE, TILE_SIZE),
         ),
         MAP_ID,
         TILES_LAYER_ID,
@@ -219,7 +242,17 @@ fn setup(
             }
         }
     }
-    // layer_builder.set_tile(UVec2::new(1,1),  Tile {texture_index: WALL_TEXTURE_INDEX,..Default::default()},);
+
+    for (position, drawable) in drawable_query.iter() {
+        let position = UVec2::new(position.x, position.y);
+        let tile = Tile {
+            texture_index: drawable.texture_index,
+            ..Default::default()
+        };
+        let _ = layer_builder
+            .set_tile(position, tile.into())
+            .expect("Couldn't set tile! :(");
+    }
 
     // Builds the layer.
     // Note: Once this is called you can no longer edit the layer until a hard sync in bevy.
