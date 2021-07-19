@@ -101,7 +101,7 @@ fn try_to_move_player(
         let to_tile = map_query.get_tile_entity(UVec2::new(to.x, to.y), MAP_ID, TILES_LAYER_ID);
 
         if to_tile.is_ok() {
-            // If that space has a tile then destroy it
+            // If that space has a tile then the player digs that tile
             destroy_tile(to, commands, map_query);
         } else {
             // If that space is empty then move the player
@@ -199,6 +199,7 @@ fn setup(
     mut map_query: MapQuery,
     drawable_query: Query<(&Position, &Drawable)>,
 ) {
+    // Load textures
     let texture_handle = asset_server.load("textures/textures.png");
     let material_handle = materials.add(ColorMaterial::texture(texture_handle));
 
@@ -218,15 +219,12 @@ fn setup(
         MAP_ID,
         TILES_LAYER_ID,
     );
-    // map.add_layer(&mut commands, 0u16, layer_entity);
-
-    // // Fill the map with walls
-    // layer_builder.set_all(TileBundle::default());
 
     // Construct a noise generator
     let mut noise = Fbm::new();
     noise.frequency = 0.1;
 
+    // Use noise function to set walls
     for i in 0..(N_CHUNKS_X * CHUNK_SIZE) {
         for j in 0..(N_CHUNKS_Y * CHUNK_SIZE) {
             let noise_value = noise.get([i as f64, j as f64]);
@@ -242,6 +240,7 @@ fn setup(
         }
     }
 
+    // Draw entities that have a sprite associated with them
     for (position, drawable) in drawable_query.iter() {
         let position = UVec2::new(position.x, position.y);
         let tile = Tile {
@@ -253,15 +252,13 @@ fn setup(
             .expect("Couldn't set tile! :(");
     }
 
-    // Builds the layer.
-    // Note: Once this is called you can no longer edit the layer until a hard sync in bevy.
+    // Build the layer
     let layer_entity = map_query.build_layer(&mut commands, layer_builder, material_handle);
 
     // Required to keep track of layers for a map internally.
     map.add_layer(&mut commands, TILES_LAYER_ID, layer_entity);
 
-    // Spawn Map
-    // Required in order to use map_query to retrieve layers/tiles.
+    // Create map
     commands
         .entity(map_entity)
         .insert(map)
