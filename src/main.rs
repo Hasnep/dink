@@ -37,6 +37,9 @@ struct Drawable {
     texture_index: u16,
 }
 
+#[derive(Default)]
+struct PlayerJustMoved(bool);
+
 fn main() {
     env_logger::Builder::from_default_env()
         .filter_level(log::LevelFilter::Info)
@@ -59,10 +62,11 @@ fn main() {
         .add_startup_system_to_stage(StartupStage::PreStartup, add_player.system())
         .add_startup_system_to_stage(StartupStage::PreStartup, add_enemy.system())
         .add_startup_system(setup.system()) // Create tilemap
-        .add_system(player_movement.system())
-        .add_system(enemy_movement.system())
+        .add_system(player_movement.system().label("player_movement"))
+        .add_system(enemy_movement.system().after("player_movement"))
         .add_system(helpers::camera::movement.system())
         .add_system(helpers::texture::set_texture_filters_to_nearest.system())
+        .insert_resource(PlayerJustMoved(false))
         .run();
 }
 
@@ -165,47 +169,51 @@ fn enemy_movement(
     mut enemy_position_query: Query<&mut Position, With<Enemy>>,
     mut commands: Commands,
     mut map_query: MapQuery,
+    player_just_moved: ResMut<PlayerJustMoved>,
 ) {
-    for mut enemy_position in enemy_position_query.iter_mut() {
-        // Get spaces next to the enemy
-        // let neighbours: Vec<&(IVec2, Option<Entity>)> =
+    if player_just_moved.0 {
+        for mut enemy_position in enemy_position_query.iter_mut() {
+            // Get spaces next to the enemy
+            // let neighbours: Vec<&(IVec2, Option<Entity>)> =
 
-        let neighbours = map_query.get_tile_neighbors(
-            UVec2::new(enemy_position.x, enemy_position.y),
-            MAP_ID,
-            TILES_LAYER_ID,
-        );
+            let neighbours = map_query.get_tile_neighbors(
+                UVec2::new(enemy_position.x, enemy_position.y),
+                MAP_ID,
+                TILES_LAYER_ID,
+            );
 
-        let neighbours = neighbours
-            .iter()
-            // Only the neighbours in the cardinal directions
-            .take(4)
-            // Check the space is empty
-            .filter(|neighbour| neighbour.1.is_none())
-            // Check the space is in-bounds
-            .filter(|neighbour| is_in_bounds(&neighbour.0))
-            .collect::<Vec<&(IVec2, Option<Entity>)>>();
+            let neighbours = neighbours
+                .iter()
+                // Only the neighbours in the cardinal directions
+                .take(4)
+                // Check the space is empty
+                .filter(|neighbour| neighbour.1.is_none())
+                // Check the space is in-bounds
+                .filter(|neighbour| is_in_bounds(&neighbour.0))
+                .collect::<Vec<&(IVec2, Option<Entity>)>>();
 
-        let to_position_and_tile = neighbours.choose(&mut rand::thread_rng());
+            let to_position_and_tile = neighbours.choose(&mut rand::thread_rng());
 
-        match to_position_and_tile {
-            Some(to_position_and_tile) => {
-                let from = *enemy_position;
-                let to = to_position_and_tile.0;
+            match to_position_and_tile {
+                Some(to_position_and_tile) => {
+                    let from = *enemy_position;
+                    let to = to_position_and_tile.0;
 
-                let to = Position {
-                    x: to.x as u32,
-                    y: to.y as u32,
-                };
+                    let to = Position {
+                        x: to.x as u32,
+                        y: to.y as u32,
+                    };
 
-                // Move the enemy
-                enemy_position.x = to.x;
-                enemy_position.y = to.y;
-                // Move the enemy's sprite
-                move_tile(from, to, &mut commands, &mut map_query, ENEMY_TEXTURE_INDEX)
+                    // Move the enemy
+                    enemy_position.x = to.x;
+                    enemy_position.y = to.y;
+                    // Move the enemy's sprite
+                    move_tile(from, to, &mut commands, &mut map_query, ENEMY_TEXTURE_INDEX)
+                }
+                None => {}
             }
-            None => {}
         }
+        commands.insert_resource(PlayerJustMoved(false));
     }
 }
 
@@ -224,6 +232,7 @@ fn player_movement(
             &mut commands,
             &mut map_query,
         );
+        commands.insert_resource(PlayerJustMoved(true));
     } else if keys.just_released(KeyCode::Right) {
         try_to_move_player(
             1,
@@ -232,6 +241,7 @@ fn player_movement(
             &mut commands,
             &mut map_query,
         );
+        commands.insert_resource(PlayerJustMoved(true));
     } else if keys.just_released(KeyCode::Up) {
         try_to_move_player(
             0,
@@ -240,6 +250,7 @@ fn player_movement(
             &mut commands,
             &mut map_query,
         );
+        commands.insert_resource(PlayerJustMoved(true));
     } else if keys.just_released(KeyCode::Down) {
         try_to_move_player(
             0,
@@ -248,6 +259,7 @@ fn player_movement(
             &mut commands,
             &mut map_query,
         );
+        commands.insert_resource(PlayerJustMoved(true));
     }
 }
 
