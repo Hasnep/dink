@@ -7,19 +7,23 @@ use bevy_ecs_tilemap::prelude::*;
 use noise::{Fbm, NoiseFn};
 use rand::seq::SliceRandom;
 
+mod helpers;
+
+// Tilemap
 const MAP_ID: u16 = 0;
 const TILES_LAYER_ID: u16 = 0;
-const WALL_TEXTURE_INDEX: u16 = 0;
-const PLAYER_TEXTURE_INDEX: u16 = 1;
-const ENEMY_TEXTURE_INDEX: u16 = 2;
 const CHUNK_SIZE: u32 = 8;
 const TILE_SIZE: f32 = 32 as f32;
-const N_TEXTURES: i32 = 3;
 const N_CHUNKS_X: u32 = 10;
 const N_CHUNKS_Y: u32 = 10;
 
-mod helpers;
+// Texture indices
+const N_TEXTURES: i32 = 3;
+const WALL_TEXTURE_INDEX: u16 = 0;
+const PLAYER_TEXTURE_INDEX: u16 = 1;
+const ENEMY_TEXTURE_INDEX: u16 = 2;
 
+// Components
 #[derive(Clone, Debug, Copy)]
 struct Position {
     x: u32,
@@ -40,6 +44,7 @@ struct Drawable {
 #[derive(Default)]
 struct PlayerJustMoved(bool);
 
+// Systems
 fn main() {
     env_logger::Builder::from_default_env()
         .filter_level(log::LevelFilter::Info)
@@ -57,11 +62,13 @@ fn main() {
         .add_plugin(LogDiagnosticsPlugin::default())
         .add_plugin(FrameTimeDiagnosticsPlugin::default())
         .add_plugin(TilemapPlugin)
-        .add_startup_system(add_camera.system())
         // We need to add the drawable entities before we draw the tilemap
         .add_startup_system_to_stage(StartupStage::PreStartup, add_player.system())
         .add_startup_system_to_stage(StartupStage::PreStartup, add_enemy.system())
-        .add_startup_system(setup.system()) // Create tilemap
+        // Create tilemap
+        .add_startup_system(setup.system())
+        // Add a camera
+        .add_startup_system(add_camera.system())
         .add_system(player_movement.system().label("player_movement"))
         .add_system(enemy_movement.system().after("player_movement"))
         .add_system(helpers::camera::movement.system())
