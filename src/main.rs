@@ -5,6 +5,7 @@ use bevy::{
 };
 use bevy_ecs_tilemap::prelude::*;
 use noise::{Fbm, NoiseFn};
+use rand::seq::SliceRandom;
 
 const MAP_ID: u16 = 0;
 const TILES_LAYER_ID: u16 = 0;
@@ -59,6 +60,7 @@ fn main() {
         .add_startup_system_to_stage(StartupStage::PreStartup, add_enemy.system())
         .add_startup_system(setup.system()) // Create tilemap
         .add_system(player_movement.system())
+        .add_system(enemy_movement.system())
         .add_system(helpers::camera::movement.system())
         .add_system(helpers::texture::set_texture_filters_to_nearest.system())
         .run();
@@ -108,7 +110,7 @@ fn try_to_move_player(
             pos.x = to.x;
             pos.y = to.y;
 
-            move_tile(from, to, commands, map_query)
+            move_tile(from, to, commands, map_query, PLAYER_TEXTURE_INDEX)
         }
     }
 }
@@ -121,7 +123,13 @@ fn destroy_tile(tile_position: Position, commands: &mut Commands, map_query: &mu
     map_query.notify_chunk_for_tile(tile_position, MAP_ID, TILES_LAYER_ID);
 }
 
-fn move_tile(from: Position, to: Position, commands: &mut Commands, map_query: &mut MapQuery) {
+fn move_tile(
+    from: Position,
+    to: Position,
+    commands: &mut Commands,
+    map_query: &mut MapQuery,
+    texture_index: u16,
+) {
     let from = UVec2::new(from.x, from.y);
     let to = UVec2::new(to.x, to.y);
     let _ = map_query
@@ -135,7 +143,7 @@ fn move_tile(from: Position, to: Position, commands: &mut Commands, map_query: &
             commands,
             to,
             Tile {
-                texture_index: PLAYER_TEXTURE_INDEX,
+                texture_index: texture_index,
                 ..Default::default()
             },
             MAP_ID,
@@ -144,6 +152,61 @@ fn move_tile(from: Position, to: Position, commands: &mut Commands, map_query: &
         .expect("Couldn't set the new tile!");
     map_query.notify_chunk_for_tile(from, MAP_ID, TILES_LAYER_ID);
     map_query.notify_chunk_for_tile(to, MAP_ID, TILES_LAYER_ID);
+}
+
+fn is_in_bounds(position: &IVec2) -> bool {
+    return position.x >= 0
+        && position.y >= 0
+        && position.x <= (CHUNK_SIZE * N_CHUNKS_X) as i32
+        && position.y <= (CHUNK_SIZE * N_CHUNKS_Y) as i32;
+}
+
+fn enemy_movement(
+    mut enemy_position_query: Query<&mut Position, With<Enemy>>,
+    mut commands: Commands,
+    mut map_query: MapQuery,
+) {
+    for mut enemy_position in enemy_position_query.iter_mut() {
+        // Get spaces next to the enemy
+        // let neighbours: Vec<&(IVec2, Option<Entity>)> =
+
+        let neighbours = map_query.get_tile_neighbors(
+            UVec2::new(enemy_position.x, enemy_position.y),
+            MAP_ID,
+            TILES_LAYER_ID,
+        );
+
+        let neighbours = neighbours
+            .iter()
+            // Only the neighbours in the cardinal directions
+            .take(4)
+            // Check the space is empty
+            .filter(|neighbour| neighbour.1.is_none())
+            // Check the space is in-bounds
+            .filter(|neighbour| is_in_bounds(&neighbour.0))
+            .collect::<Vec<&(IVec2, Option<Entity>)>>();
+
+        let to_position_and_tile = neighbours.choose(&mut rand::thread_rng());
+
+        match to_position_and_tile {
+            Some(to_position_and_tile) => {
+                let from = *enemy_position;
+                let to = to_position_and_tile.0;
+
+                let to = Position {
+                    x: to.x as u32,
+                    y: to.y as u32,
+                };
+
+                // Move the enemy
+                enemy_position.x = to.x;
+                enemy_position.y = to.y;
+                // Move the enemy's sprite
+                move_tile(from, to, &mut commands, &mut map_query, ENEMY_TEXTURE_INDEX)
+            }
+            None => {}
+        }
+    }
 }
 
 fn player_movement(
