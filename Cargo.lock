@@ -1261,6 +1261,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "dink"
+version = "0.6.0"
+dependencies = [
+ "bevy",
+ "bevy_ecs_tilemap",
+ "bevycheck",
+ "env_logger 0.9.0",
+ "log",
+ "noise",
+ "rand 0.8.4",
+]
+
+[[package]]
 name = "discard"
 version = "1.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3030,19 +3043,6 @@ checksum = "b65c2eda643191f6d1bb12ea323a9db8d9ba95374e9be3780b5a9fb5cfb8520f"
 dependencies = [
  "cpal",
  "minimp3",
-]
-
-[[package]]
-name = "roguelike"
-version = "0.6.0"
-dependencies = [
- "bevy",
- "bevy_ecs_tilemap",
- "bevycheck",
- "env_logger 0.9.0",
- "log",
- "noise",
- "rand 0.8.4",
 ]
 
 [[package]]
