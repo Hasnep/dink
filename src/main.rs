@@ -230,44 +230,32 @@ fn player_movement(
     mut commands: Commands,
     mut map_query: MapQuery,
 ) {
+    let mut player_moved = false;
+    let mut direction = IVec2::new(0, 0);
     // player_position_query
     if keys.just_released(KeyCode::Left) {
-        try_to_move_player(
-            -1,
-            0,
-            &mut player_position_query,
-            &mut commands,
-            &mut map_query,
-        );
-        commands.insert_resource(PlayerJustMoved(true));
+        direction = IVec2::new(-1, 0);
+        player_moved = true;
     } else if keys.just_released(KeyCode::Right) {
-        try_to_move_player(
-            1,
-            0,
-            &mut player_position_query,
-            &mut commands,
-            &mut map_query,
-        );
-        commands.insert_resource(PlayerJustMoved(true));
+        direction = IVec2::new(1, 0);
+        player_moved = true;
     } else if keys.just_released(KeyCode::Up) {
-        try_to_move_player(
-            0,
-            1,
-            &mut player_position_query,
-            &mut commands,
-            &mut map_query,
-        );
-        commands.insert_resource(PlayerJustMoved(true));
+        direction = IVec2::new(0, 1);
+        player_moved = true;
     } else if keys.just_released(KeyCode::Down) {
+        direction = IVec2::new(0, -1);
+        player_moved = true;
+    }
+    if player_moved {
         try_to_move_player(
-            0,
-            -1,
+            direction.x,
+            direction.y,
             &mut player_position_query,
             &mut commands,
             &mut map_query,
         );
-        commands.insert_resource(PlayerJustMoved(true));
-    }
+        commands.insert_resource(PlayerJustMoved(true))
+    };
 }
 
 fn add_camera(mut commands: Commands) {
