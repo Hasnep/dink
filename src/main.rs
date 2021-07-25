@@ -100,12 +100,13 @@ fn add_enemy(mut commands: Commands) {
 fn try_to_move_player(
     delta_x: i32,
     delta_y: i32,
-    player_position: &mut Query<&mut Position, With<Player>>,
+    mut player_query: Query<&mut Position, (With<Player>, Without<Enemy>)>,
+    enemy_query: Query<(Entity, &Position), (With<Enemy>, Without<Player>)>,
     commands: &mut Commands,
     map_query: &mut MapQuery,
 ) {
-    for mut pos in player_position.iter_mut() {
-        let from = *pos;
+    for mut player_position in player_query.iter_mut() {
+        let from = *player_position;
         let to = Position {
             x: ((from.x as i32) + delta_x) as u32,
             y: ((from.y as i32) + delta_y) as u32,
@@ -114,14 +115,22 @@ fn try_to_move_player(
         let to_tile = map_query.get_tile_entity(UVec2::new(to.x, to.y), MAP_ID, TILES_LAYER_ID);
 
         if to_tile.is_ok() {
+            for (enemy_id, enemy_position) in enemy_query.iter() {
+                // If there is an enemy there
+                if enemy_position.x == to.x && enemy_position.y == to.y {
+                    // The player kills the enemy
+                    commands.entity(enemy_id).despawn();
+                    break;
+                }
+            }
             // If that space has a tile then the player digs that tile
             destroy_tile(to, commands, map_query);
         } else {
             // If that space is empty then move the player
-            pos.x = to.x;
-            pos.y = to.y;
+            player_position.x = to.x;
+            player_position.y = to.y;
 
-            move_tile(from, to, commands, map_query, PLAYER_TEXTURE_INDEX)
+            move_tile(from, to, commands, map_query, PLAYER_TEXTURE_INDEX);
         }
     }
 }
@@ -173,13 +182,13 @@ fn is_in_bounds(position: &IVec2) -> bool {
 }
 
 fn enemy_movement(
-    mut enemy_position_query: Query<&mut Position, With<Enemy>>,
+    mut enemy_query: Query<&mut Position, With<Enemy>>,
     mut commands: Commands,
     mut map_query: MapQuery,
     player_just_moved: ResMut<PlayerJustMoved>,
 ) {
     if player_just_moved.0 {
-        for mut enemy_position in enemy_position_query.iter_mut() {
+        for mut enemy_position in enemy_query.iter_mut() {
             // Get spaces next to the enemy
             // let neighbours: Vec<&(IVec2, Option<Entity>)> =
 
@@ -226,7 +235,8 @@ fn enemy_movement(
 
 fn player_movement(
     keys: Res<Input<KeyCode>>,
-    mut player_position_query: Query<&mut Position, With<Player>>,
+    player_query: Query<&mut Position, (With<Player>, Without<Enemy>)>,
+    enemy_query: Query<(Entity, &Position), (With<Enemy>, Without<Player>)>,
     mut commands: Commands,
     mut map_query: MapQuery,
 ) {
@@ -250,7 +260,8 @@ fn player_movement(
         try_to_move_player(
             direction.x,
             direction.y,
-            &mut player_position_query,
+            player_query,
+            enemy_query,
             &mut commands,
             &mut map_query,
         );
