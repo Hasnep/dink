@@ -64,7 +64,7 @@ fn main() {
         .add_plugin(TilemapPlugin)
         // We need to add the drawable entities before we draw the tilemap
         .add_startup_system_to_stage(StartupStage::PreStartup, add_player.system())
-        .add_startup_system_to_stage(StartupStage::PreStartup, add_enemy.system())
+        .add_startup_system_to_stage(StartupStage::PreStartup, add_enemies.system())
         // Create tilemap
         .add_startup_system(setup.system())
         // Add a camera
@@ -87,14 +87,16 @@ fn add_player(mut commands: Commands) {
     ));
 }
 
-fn add_enemy(mut commands: Commands) {
-    commands.spawn_bundle((
-        Position { x: 4, y: 4 },
-        Enemy {},
-        Drawable {
-            texture_index: ENEMY_TEXTURE_INDEX,
-        },
-    ));
+fn add_enemies(mut commands: Commands) {
+    for i in 0..10 {
+        commands.spawn_bundle((
+            Position { x: 4, y: i },
+            Enemy {},
+            Drawable {
+                texture_index: ENEMY_TEXTURE_INDEX,
+            },
+        ));
+    }
 }
 
 fn try_to_move_player(
