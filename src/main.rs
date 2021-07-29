@@ -241,34 +241,38 @@ fn player_movement(
     enemy_query: Query<(Entity, &Position), (With<Enemy>, Without<Player>)>,
     mut commands: Commands,
     mut map_query: MapQuery,
+    player_just_moved: ResMut<PlayerJustMoved>,
 ) {
-    let mut player_moved = false;
-    let mut direction = IVec2::new(0, 0);
-    // player_position_query
-    if keys.just_released(KeyCode::Left) {
-        direction = IVec2::new(-1, 0);
-        player_moved = true;
-    } else if keys.just_released(KeyCode::Right) {
-        direction = IVec2::new(1, 0);
-        player_moved = true;
-    } else if keys.just_released(KeyCode::Up) {
-        direction = IVec2::new(0, 1);
-        player_moved = true;
-    } else if keys.just_released(KeyCode::Down) {
-        direction = IVec2::new(0, -1);
-        player_moved = true;
+    // Only let the player move when the game loop is ready
+    if !player_just_moved.0 {
+        let mut key_was_pressed = false;
+        let mut direction = IVec2::new(0, 0);
+        // player_position_query
+        if keys.just_released(KeyCode::Left) {
+            direction = IVec2::new(-1, 0);
+            key_was_pressed = true;
+        } else if keys.just_released(KeyCode::Right) {
+            direction = IVec2::new(1, 0);
+            key_was_pressed = true;
+        } else if keys.just_released(KeyCode::Up) {
+            direction = IVec2::new(0, 1);
+            key_was_pressed = true;
+        } else if keys.just_released(KeyCode::Down) {
+            direction = IVec2::new(0, -1);
+            key_was_pressed = true;
+        }
+        if key_was_pressed {
+            try_to_move_player(
+                direction.x,
+                direction.y,
+                player_query,
+                enemy_query,
+                &mut commands,
+                &mut map_query,
+            );
+            commands.insert_resource(PlayerJustMoved(true))
+        };
     }
-    if player_moved {
-        try_to_move_player(
-            direction.x,
-            direction.y,
-            player_query,
-            enemy_query,
-            &mut commands,
-            &mut map_query,
-        );
-        commands.insert_resource(PlayerJustMoved(true))
-    };
 }
 
 fn add_camera(mut commands: Commands) {
