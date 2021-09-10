@@ -66,3 +66,7 @@ pub fn movement(
         transform.translation += time.delta_seconds() * direction * 500.;
     }
 }
+
+pub fn add_camera(mut commands: Commands) {
+    commands.spawn_bundle(OrthographicCameraBundle::new_2d());
+}
