@@ -765,18 +765,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "bevycheck"
-version = "0.1.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0a5e6126184d72709bd185f6e6c747b25c9a6d7bd0663acc620f41b5e6f758ca"
-dependencies = [
- "bevy",
- "proc-macro-error",
- "quote",
- "syn",
-]
-
-[[package]]
 name = "bindgen"
 version = "0.56.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1266,7 +1254,6 @@ version = "0.7.0"
 dependencies = [
  "bevy",
  "bevy_ecs_tilemap",
- "bevycheck",
  "env_logger 0.9.0",
  "log",
  "noise",
@@ -2808,30 +2795,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1d6ea3c4595b96363c13943497db34af4460fb474a95c43f4446ad341b8c9785"
 dependencies = [
  "toml",
-]
-
-[[package]]
-name = "proc-macro-error"
-version = "1.0.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "da25490ff9892aab3fcf7c36f08cfb902dd3e71ca0f9f9517bea02a73a5ce38c"
-dependencies = [
- "proc-macro-error-attr",
- "proc-macro2",
- "quote",
- "syn",
- "version_check",
-]
-
-[[package]]
-name = "proc-macro-error-attr"
-version = "1.0.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a1be40180e52ecc98ad80b184934baf3d0d29f979574e439af5a55274b35f869"
-dependencies = [
- "proc-macro2",
- "quote",
- "version_check",
 ]
 
 [[package]]
