@@ -10,4 +10,4 @@ pub struct Drawable {
 }
 
 #[derive(Default)]
-pub struct PlayerJustMoved(pub bool);
+pub struct CanPlayerMove(pub bool);

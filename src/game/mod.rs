@@ -24,6 +24,6 @@ impl Plugin for GamePlugin {
             .add_system(enemy::movement.system().after("player_movement"))
             .add_system(helpers::camera::movement.system())
             .add_system(helpers::texture::set_texture_filters_to_nearest.system())
-            .insert_resource(components::PlayerJustMoved(false));
+            .insert_resource(components::CanPlayerMove(true));
     }
 }

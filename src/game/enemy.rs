@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use bevy_ecs_tilemap::prelude::*;
 use rand::seq::SliceRandom;
 
-use crate::game::components::{Drawable, PlayerJustMoved, Position};
+use crate::game::components::{Drawable, CanPlayerMove, Position};
 use crate::game::config::*;
 use crate::game::tilemap::*;
 
@@ -25,9 +25,9 @@ pub fn movement(
     mut enemy_query: Query<&mut Position, With<Enemy>>,
     mut commands: Commands,
     mut map_query: MapQuery,
-    player_just_moved: ResMut<PlayerJustMoved>,
+    can_player_move: ResMut<CanPlayerMove>,
 ) {
-    if player_just_moved.0 {
+    if !can_player_move.0 {
         for mut enemy_position in enemy_query.iter_mut() {
             // Get spaces next to the enemy
             // let neighbours: Vec<&(IVec2, Option<Entity>)> =
@@ -69,6 +69,6 @@ pub fn movement(
                 None => {}
             }
         }
-        commands.insert_resource(PlayerJustMoved(false));
+        commands.insert_resource(CanPlayerMove(true));
     }
 }

@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use bevy_ecs_tilemap::prelude::*;
 
-use crate::game::components::{Drawable, PlayerJustMoved, Position};
+use crate::game::components::{CanPlayerMove, Drawable, Position};
 use crate::game::config::*;
 use crate::game::enemy::Enemy;
 use crate::game::tilemap::*;
@@ -63,10 +63,10 @@ pub fn movement(
     enemy_query: Query<(Entity, &Position), (With<Enemy>, Without<Player>)>,
     mut commands: Commands,
     mut map_query: MapQuery,
-    player_just_moved: ResMut<PlayerJustMoved>,
+    can_player_move: ResMut<CanPlayerMove>,
 ) {
     // Only let the player move when the game loop is ready
-    if !player_just_moved.0 {
+    if can_player_move.0 {
         let mut key_was_pressed = false;
         let mut direction = IVec2::new(0, 0);
         // player_position_query
@@ -92,7 +92,7 @@ pub fn movement(
                 &mut commands,
                 &mut map_query,
             );
-            commands.insert_resource(PlayerJustMoved(true))
+            commands.insert_resource(CanPlayerMove(false))
         };
     }
 }
