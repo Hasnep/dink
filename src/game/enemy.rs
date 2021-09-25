@@ -9,7 +9,7 @@ use crate::game::tilemap::*;
 #[derive(Clone, Debug)]
 pub struct Enemy {}
 
-pub fn add_enemies(mut commands: Commands) {
+pub fn add(mut commands: Commands) {
     for i in 0..10 {
         commands.spawn_bundle((
             Position { x: 4, y: i },
@@ -21,7 +21,7 @@ pub fn add_enemies(mut commands: Commands) {
     }
 }
 
-pub fn enemy_movement(
+pub fn movement(
     mut enemy_query: Query<&mut Position, With<Enemy>>,
     mut commands: Commands,
     mut map_query: MapQuery,

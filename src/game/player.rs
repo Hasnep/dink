@@ -9,7 +9,7 @@ use crate::game::tilemap::*;
 #[derive(Clone, Debug)]
 pub struct Player {}
 
-pub fn add_player(mut commands: Commands) {
+pub fn add(mut commands: Commands) {
     commands.spawn_bundle((
         Position { x: 2, y: 4 },
         Player {},
@@ -19,7 +19,7 @@ pub fn add_player(mut commands: Commands) {
     ));
 }
 
-fn try_to_move_player(
+fn try_to_move(
     delta_x: i32,
     delta_y: i32,
     mut player_query: Query<&mut Position, (With<Player>, Without<Enemy>)>,
@@ -57,7 +57,7 @@ fn try_to_move_player(
     }
 }
 
-pub fn player_movement(
+pub fn movement(
     keys: Res<Input<KeyCode>>,
     player_query: Query<&mut Position, (With<Player>, Without<Enemy>)>,
     enemy_query: Query<(Entity, &Position), (With<Enemy>, Without<Player>)>,
@@ -84,7 +84,7 @@ pub fn player_movement(
             key_was_pressed = true;
         }
         if key_was_pressed {
-            try_to_move_player(
+            try_to_move(
                 direction.x,
                 direction.y,
                 player_query,
