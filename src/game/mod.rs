@@ -6,6 +6,7 @@ pub mod enemy;
 pub mod helpers;
 pub mod player;
 pub mod setup;
+pub mod states;
 pub mod tilemap;
 
 pub struct GamePlugin;
@@ -20,10 +21,17 @@ impl Plugin for GamePlugin {
             .add_startup_system(setup::setup.system())
             // Add a camera
             .add_startup_system(helpers::camera::add_camera.system())
-            .add_system(player::movement.system().label("player_movement"))
-            .add_system(enemy::movement.system().after("player_movement"))
+            // Set the initial game state
+            .add_state(states::GameState::PlayerTurn)
+            .add_system_set(
+                SystemSet::on_update(states::GameState::PlayerTurn)
+                    .with_system(player::movement.system().label("player_movement")),
+            )
+            .add_system_set(
+                SystemSet::on_update(states::GameState::EnemyTurn)
+                    .with_system(enemy::movement.system().after("enemy_movement")),
+            )
             .add_system(helpers::camera::movement.system())
-            .add_system(helpers::texture::set_texture_filters_to_nearest.system())
-            .insert_resource(components::CanPlayerMove(true));
+            .add_system(helpers::texture::set_texture_filters_to_nearest.system());
     }
 }

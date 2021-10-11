@@ -1,9 +1,10 @@
 use bevy::prelude::*;
 use bevy_ecs_tilemap::prelude::*;
 
-use crate::game::components::{CanPlayerMove, Drawable, Position};
+use crate::game::components::{Drawable, Position};
 use crate::game::config::*;
 use crate::game::enemy::Enemy;
+use crate::game::states::GameState;
 use crate::game::tilemap::*;
 
 #[derive(Clone, Debug)]
@@ -52,6 +53,7 @@ fn try_to_move(
             player_position.x = to.x;
             player_position.y = to.y;
 
+            println!("Moving from {},{} to {},{}", from.x, from.y, to.x, to.y);
             move_tile(from, to, commands, map_query, PLAYER_TEXTURE_INDEX);
         }
     }
@@ -63,33 +65,30 @@ pub fn movement(
     enemy_query: Query<(Entity, &Position), (With<Enemy>, Without<Player>)>,
     mut commands: Commands,
     mut map_query: MapQuery,
-    can_player_move: ResMut<CanPlayerMove>,
+    mut game_state: ResMut<State<GameState>>,
 ) {
-    // Only let the player move when the game loop is ready
-    if can_player_move.0 {
-        let delta = if keys.just_released(KeyCode::Left) {
-            IVec2::new(-1, 0)
-        } else if keys.just_released(KeyCode::Right) {
-            IVec2::new(1, 0)
-        } else if keys.just_released(KeyCode::Up) {
-            IVec2::new(0, 1)
-        } else if keys.just_released(KeyCode::Down) {
-            IVec2::new(0, -1)
-        } else {
-            IVec2::new(0, 0)
-        };
-
-        // If a movement key was pressed
-        if delta.x != 0 || delta.y != 0 {
-            try_to_move(
-                delta.x,
-                delta.y,
-                player_query,
-                enemy_query,
-                &mut commands,
-                &mut map_query,
-            );
-            commands.insert_resource(CanPlayerMove(false))
-        };
-    }
+    println!("Checking for player input.");
+    let delta = if keys.just_released(KeyCode::Left) {
+        IVec2::new(-1, 0)
+    } else if keys.just_released(KeyCode::Right) {
+        IVec2::new(1, 0)
+    } else if keys.just_released(KeyCode::Up) {
+        IVec2::new(0, 1)
+    } else if keys.just_released(KeyCode::Down) {
+        IVec2::new(0, -1)
+    } else {
+        println!("Player didn't press anything.");
+        return;
+    };
+    println!("The player did press something");
+    let did_move = try_to_move(
+        direction.x,
+        direction.y,
+        player_query,
+        enemy_query,
+        &mut commands,
+        &mut map_query,
+    );
+    println!("Now it's the enemy turn.");
+    game_state.set(GameState::EnemyTurn).unwrap();
 }

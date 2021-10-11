@@ -38,7 +38,7 @@ pub fn move_tile(
             MAP_ID,
             TILES_LAYER_ID,
         )
-        .expect("Couldn't set the new tile!");
+        .expect(&format!("Couldn't set the new tile at {},{}!",to.x,to.y));
     map_query.notify_chunk_for_tile(from, MAP_ID, TILES_LAYER_ID);
     map_query.notify_chunk_for_tile(to, MAP_ID, TILES_LAYER_ID);
 }
