@@ -67,26 +67,23 @@ pub fn movement(
 ) {
     // Only let the player move when the game loop is ready
     if can_player_move.0 {
-        let mut key_was_pressed = false;
-        let mut direction = IVec2::new(0, 0);
-        // player_position_query
-        if keys.just_released(KeyCode::Left) {
-            direction = IVec2::new(-1, 0);
-            key_was_pressed = true;
+        let delta = if keys.just_released(KeyCode::Left) {
+            IVec2::new(-1, 0)
         } else if keys.just_released(KeyCode::Right) {
-            direction = IVec2::new(1, 0);
-            key_was_pressed = true;
+            IVec2::new(1, 0)
         } else if keys.just_released(KeyCode::Up) {
-            direction = IVec2::new(0, 1);
-            key_was_pressed = true;
+            IVec2::new(0, 1)
         } else if keys.just_released(KeyCode::Down) {
-            direction = IVec2::new(0, -1);
-            key_was_pressed = true;
-        }
-        if key_was_pressed {
+            IVec2::new(0, -1)
+        } else {
+            IVec2::new(0, 0)
+        };
+        
+        // If a movement key was pressed
+        if delta.x != 0 || delta.y != 0 {
             try_to_move(
-                direction.x,
-                direction.y,
+                delta.x,
+                delta.y,
                 player_query,
                 enemy_query,
                 &mut commands,

@@ -1250,7 +1250,7 @@ dependencies = [
 
 [[package]]
 name = "dink"
-version = "0.7.0"
+version = "0.7.1"
 dependencies = [
  "bevy",
  "bevy_ecs_tilemap",
