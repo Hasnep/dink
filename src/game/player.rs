@@ -78,7 +78,7 @@ pub fn movement(
         } else {
             IVec2::new(0, 0)
         };
-        
+
         // If a movement key was pressed
         if delta.x != 0 || delta.y != 0 {
             try_to_move(
