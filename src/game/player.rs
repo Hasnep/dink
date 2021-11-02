@@ -81,7 +81,7 @@ pub fn movement(
         return;
     };
     println!("The player did press something");
-    let did_move = try_to_move(
+    try_to_move(
         delta.x,
         delta.y,
         player_query,
