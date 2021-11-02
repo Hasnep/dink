@@ -82,8 +82,8 @@ pub fn movement(
     };
     println!("The player did press something");
     let did_move = try_to_move(
-        direction.x,
-        direction.y,
+        delta.x,
+        delta.y,
         player_query,
         enemy_query,
         &mut commands,
