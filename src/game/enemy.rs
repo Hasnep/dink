@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use bevy_ecs_tilemap::prelude::*;
 use rand::seq::SliceRandom;
 
-use crate::game::components::{Drawable, CanPlayerMove, Position};
+use crate::game::components::{CanPlayerMove, Drawable, Position};
 use crate::game::config::*;
 use crate::game::tilemap::*;
 
