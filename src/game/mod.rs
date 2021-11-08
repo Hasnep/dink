@@ -25,11 +25,11 @@ impl Plugin for GamePlugin {
             .add_state(states::GameState::PlayerTurn)
             .add_system_set(
                 SystemSet::on_update(states::GameState::PlayerTurn)
-                    .with_system(player::movement.system().label("player_movement")),
+                    .with_system(player::movement.system()),
             )
             .add_system_set(
                 SystemSet::on_update(states::GameState::EnemyTurn)
-                    .with_system(enemy::movement.system().after("enemy_movement")),
+                    .with_system(enemy::movement.system()),
             )
             .add_system(helpers::camera::movement.system())
             .add_system(helpers::texture::set_texture_filters_to_nearest.system());
