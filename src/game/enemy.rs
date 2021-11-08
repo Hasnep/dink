@@ -29,8 +29,6 @@ pub fn movement(
     mut game_state: ResMut<State<GameState>>,
 ) {
     for mut enemy_position in enemy_query.iter_mut() {
-        println!("enemy is at {},{}", enemy_position.x, enemy_position.y);
-
         // Get spaces next to the enemy
         // let neighbours: Vec<&(IVec2, Option<Entity>)> =
 
@@ -72,5 +70,5 @@ pub fn movement(
         }
     }
     println!("It's now the player's turn");
-    game_state.set(GameState::PlayerTurn).unwrap();
+    game_state.replace(GameState::PlayerTurn).unwrap();
 }
