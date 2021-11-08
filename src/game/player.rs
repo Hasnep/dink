@@ -35,6 +35,10 @@ fn try_to_move(
             y: ((from.y as i32) + delta_y) as u32,
         };
 
+        if !is_in_bounds(&IVec2::new(to.x as i32, to.y as i32)) {
+            return;
+        }
+
         let to_tile = map_query.get_tile_entity(UVec2::new(to.x, to.y), MAP_ID, TILES_LAYER_ID);
 
         if to_tile.is_ok() {
