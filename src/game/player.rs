@@ -8,6 +8,11 @@ use crate::game::states::GameState;
 use crate::game::tilemap::*;
 
 #[derive(Clone, Debug)]
+pub struct LastUpdate {
+    last_update: f64,
+}
+
+#[derive(Clone, Debug)]
 pub struct Player {}
 
 pub fn add(mut commands: Commands) {
@@ -18,6 +23,8 @@ pub fn add(mut commands: Commands) {
             texture_index: PLAYER_TEXTURE_INDEX,
         },
     ));
+
+    commands.spawn_bundle((LastUpdate { last_update: 0.0 },));
 }
 
 fn try_to_move(
@@ -70,29 +77,36 @@ pub fn movement(
     mut commands: Commands,
     mut map_query: MapQuery,
     mut game_state: ResMut<State<GameState>>,
+    time: Res<Time>,
+    mut last_update_query: Query<&mut LastUpdate>,
 ) {
-    println!("Checking for player input.");
-    let delta = if keys.just_released(KeyCode::Left) {
-        IVec2::new(-1, 0)
-    } else if keys.just_released(KeyCode::Right) {
-        IVec2::new(1, 0)
-    } else if keys.just_released(KeyCode::Up) {
-        IVec2::new(0, 1)
-    } else if keys.just_released(KeyCode::Down) {
-        IVec2::new(0, -1)
-    } else {
-        println!("Player didn't press anything.");
-        return;
-    };
-    println!("The player did press something");
-    try_to_move(
-        delta.x,
-        delta.y,
-        player_query,
-        enemy_query,
-        &mut commands,
-        &mut map_query,
-    );
-    println!("Now it's the enemy turn.");
-    game_state.set(GameState::EnemyTurn).unwrap();
+    let current_time = time.seconds_since_startup();
+    if let Ok(mut last_update) = last_update_query.single_mut() {
+        if current_time - last_update.last_update > 0.0 {
+            for key in keys.get_just_released() {
+                let delta = match key {
+                    KeyCode::Left => IVec2::new(-1, 0),
+                    KeyCode::Right => IVec2::new(1, 0),
+                    KeyCode::Up => IVec2::new(0, 1),
+                    KeyCode::Down => IVec2::new(0, -1),
+                    _ => IVec2::new(0, 0),
+                };
+
+                if delta.x != 0 || delta.y != 0 {
+                    let _did_move = try_to_move(
+                        delta.x,
+                        delta.y,
+                        player_query,
+                        enemy_query,
+                        &mut commands,
+                        &mut map_query,
+                    );
+
+                    game_state.replace(GameState::EnemyTurn).unwrap();
+                    last_update.last_update = current_time;
+                    return;
+                }
+            }
+        }
+    }
 }
