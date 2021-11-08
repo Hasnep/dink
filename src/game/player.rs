@@ -35,38 +35,40 @@ fn try_to_move(
     commands: &mut Commands,
     map_query: &mut MapQuery,
 ) {
-    for mut player_position in player_query.iter_mut() {
-        let from = *player_position;
-        let to = Position {
-            x: ((from.x as i32) + delta_x) as u32,
-            y: ((from.y as i32) + delta_y) as u32,
-        };
+    let mut player_position = player_query
+        .single_mut()
+        .expect("There should always be exactly one player in the game!");
 
-        if !is_in_bounds(&IVec2::new(to.x as i32, to.y as i32)) {
-            return;
-        }
+    let from = *player_position;
+    let to = Position {
+        x: ((from.x as i32) + delta_x) as u32,
+        y: ((from.y as i32) + delta_y) as u32,
+    };
 
-        let to_tile = map_query.get_tile_entity(UVec2::new(to.x, to.y), MAP_ID, TILES_LAYER_ID);
+    if !is_in_bounds(&IVec2::new(to.x as i32, to.y as i32)) {
+        return;
+    }
 
-        if to_tile.is_ok() {
-            for (enemy_id, enemy_position) in enemy_query.iter() {
-                // If there is an enemy there
-                if enemy_position.x == to.x && enemy_position.y == to.y {
-                    // The player kills the enemy
-                    commands.entity(enemy_id).despawn();
-                    break;
-                }
+    let to_tile = map_query.get_tile_entity(UVec2::new(to.x, to.y), MAP_ID, TILES_LAYER_ID);
+
+    if to_tile.is_ok() {
+        for (enemy_id, enemy_position) in enemy_query.iter() {
+            // If there is an enemy there
+            if enemy_position.x == to.x && enemy_position.y == to.y {
+                // The player kills the enemy
+                commands.entity(enemy_id).despawn();
+                break;
             }
-            // If that space has a tile then the player digs that tile
-            destroy_tile(to, commands, map_query);
-        } else {
-            // If that space is empty then move the player
-            player_position.x = to.x;
-            player_position.y = to.y;
-
-            println!("Moving from {},{} to {},{}", from.x, from.y, to.x, to.y);
-            move_tile(from, to, commands, map_query, PLAYER_TEXTURE_INDEX);
         }
+        // If that space has a tile then the player digs that tile
+        destroy_tile(to, commands, map_query);
+    } else {
+        // If that space is empty then move the player
+        player_position.x = to.x;
+        player_position.y = to.y;
+
+        println!("Moving from {},{} to {},{}", from.x, from.y, to.x, to.y);
+        move_tile(from, to, commands, map_query, PLAYER_TEXTURE_INDEX);
     }
 }
 
