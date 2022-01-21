@@ -7,11 +7,10 @@ use bevy_ecs_tilemap::prelude::*;
 
 mod game;
 
-// Systems
 fn main() {
-    env_logger::Builder::from_default_env()
-        .filter_level(log::LevelFilter::Info)
-        .init();
+    // env_logger::Builder::from_default_env()
+    //     .filter_level(log::LevelFilter::Info)
+    //     .init();
 
     App::build()
         .insert_resource(WindowDescriptor {

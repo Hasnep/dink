@@ -1,13 +1,30 @@
-#[derive(Clone, Debug, Copy)]
+#[derive(Clone, Copy)]
 pub struct Position {
     pub x: u32,
     pub y: u32,
 }
 
-#[derive(Clone, Debug)]
 pub struct Drawable {
     pub texture_index: u16,
 }
 
-#[derive(Default)]
-pub struct CanPlayerMove(pub bool);
+#[derive(Clone, Copy)]
+pub enum Action {
+    StayStill,
+    North,
+    South,
+    West,
+    East,
+}
+
+pub struct GoingToTakeAction {
+    pub action: Option<Action>,
+}
+
+pub struct HaveUpdatedTilemap(pub bool);
+
+pub struct PlayerTag;
+
+pub struct EnemyTag;
+
+pub struct MoveRandomlyTag;
