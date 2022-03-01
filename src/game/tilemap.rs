@@ -5,7 +5,7 @@ use crate::game::components::Position;
 use crate::game::config::*;
 
 pub fn destroy_tile(tile_position: Position, commands: &mut Commands, map_query: &mut MapQuery) {
-    let tile_position = UVec2::new(tile_position.x, tile_position.y);
+    let tile_position = TilePos(tile_position.x, tile_position.y);
     let _ = map_query
         .despawn_tile(commands, tile_position, MAP_ID, TILES_LAYER_ID)
         .expect("Oh no something went wrong with de-spawning a tile!");
@@ -19,8 +19,8 @@ pub fn move_tile(
     map_query: &mut MapQuery,
     texture_index: u16,
 ) {
-    let from = UVec2::new(from.x, from.y);
-    let to = UVec2::new(to.x, to.y);
+    let from = TilePos(from.x, from.y);
+    let to = TilePos(to.x, to.y);
     let _ = map_query
         .get_tile_entity(from, MAP_ID, TILES_LAYER_ID)
         .expect("Tried to move a tile that doesn't exist!");
@@ -38,7 +38,7 @@ pub fn move_tile(
             MAP_ID,
             TILES_LAYER_ID,
         )
-        .expect(&format!("Couldn't set the new tile at {},{}!", to.x, to.y));
+        .expect(&format!("Couldn't set the new tile at {},{}!", to.0, to.1));
     map_query.notify_chunk_for_tile(from, MAP_ID, TILES_LAYER_ID);
     map_query.notify_chunk_for_tile(to, MAP_ID, TILES_LAYER_ID);
 }

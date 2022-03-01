@@ -12,26 +12,23 @@ pub mod tilemap;
 pub struct GamePlugin;
 
 impl Plugin for GamePlugin {
-    fn build(&self, app: &mut AppBuilder) {
+    fn build(&self, app: &mut App) {
         app
             // We need to add the drawable entities before we draw the tilemap
-            .add_startup_system_to_stage(StartupStage::PreStartup, player::add.system())
-            .add_startup_system_to_stage(StartupStage::PreStartup, enemy::add.system())
+            .add_startup_system_to_stage(StartupStage::PreStartup, player::add)
+            .add_startup_system_to_stage(StartupStage::PreStartup, enemy::add)
             // Create tilemap
-            .add_startup_system(setup::setup.system())
+            .add_startup_system(setup::setup)
             // Add a camera
-            .add_startup_system(helpers::camera::add_camera.system())
+            .add_startup_system(helpers::camera::add_camera)
             // Set the initial game state
             .add_state(states::GameState::PlayerTurn)
             .add_system_set(
-                SystemSet::on_update(states::GameState::PlayerTurn)
-                    .with_system(player::movement.system()),
+                SystemSet::on_update(states::GameState::PlayerTurn).with_system(player::movement),
             )
             .add_system_set(
-                SystemSet::on_update(states::GameState::EnemyTurn)
-                    .with_system(enemy::movement.system()),
+                SystemSet::on_update(states::GameState::EnemyTurn).with_system(enemy::movement),
             )
-            .add_system(helpers::camera::movement.system())
-            .add_system(helpers::texture::set_texture_filters_to_nearest.system());
+            .add_system(helpers::camera::movement);
     }
 }

@@ -7,7 +7,7 @@ use crate::game::config::*;
 use crate::game::states::GameState;
 use crate::game::tilemap::*;
 
-#[derive(Clone, Debug)]
+#[derive(Component)]
 pub struct Enemy {}
 
 pub fn add(mut commands: Commands) {
@@ -32,8 +32,8 @@ pub fn movement(
         // Get spaces next to the enemy
         // let neighbours: Vec<&(IVec2, Option<Entity>)> =
 
-        let neighbours = map_query.get_tile_neighbors(
-            UVec2::new(enemy_position.x, enemy_position.y),
+        let neighbours = map_query.get_neighbouring_pos(
+            TilePos(enemy_position.x, enemy_position.y),
             MAP_ID,
             TILES_LAYER_ID,
         );
@@ -42,11 +42,9 @@ pub fn movement(
             .iter()
             // Only the neighbours in the cardinal directions
             .take(4)
-            // Check the space is empty
-            .filter(|neighbour| neighbour.1.is_none())
-            // Check the space is in-bounds
-            .filter(|neighbour| is_in_bounds(&neighbour.0))
-            .collect::<Vec<&(IVec2, Option<Entity>)>>();
+            // Keep
+            .map(|n| n.unwrap())
+            .collect::<Vec<Entity>>();
 
         let to_position_and_tile = neighbours.choose(&mut rand::thread_rng());
 
@@ -56,8 +54,8 @@ pub fn movement(
                 let to = to_position_and_tile.0;
 
                 let to = Position {
-                    x: to.x as u32,
-                    y: to.y as u32,
+                    x: to.0 as u32,
+                    y: to.1 as u32,
                 };
 
                 // Move the enemy

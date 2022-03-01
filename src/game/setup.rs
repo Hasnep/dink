@@ -14,7 +14,7 @@ pub fn setup(
 ) {
     // Load textures
     let texture_handle = asset_server.load("textures/textures.png");
-    let material_handle = materials.add(ColorMaterial::texture(texture_handle));
+    // let material_handle = materials.add(ColorMaterial::texture(texture_handle));
 
     // Create map entity and component:
     let map_entity = commands.spawn().id();
@@ -24,10 +24,10 @@ pub fn setup(
     let (mut layer_builder, _) = LayerBuilder::<TileBundle>::new(
         &mut commands,
         LayerSettings::new(
-            UVec2::new(N_CHUNKS_X, N_CHUNKS_Y),
-            UVec2::new(CHUNK_SIZE, CHUNK_SIZE),
-            Vec2::new(TILE_SIZE, TILE_SIZE),
-            Vec2::new((N_TEXTURES as f32) * TILE_SIZE, TILE_SIZE),
+            MapSize(N_CHUNKS_X, N_CHUNKS_Y), // UVec2::new(N_CHUNKS_X, N_CHUNKS_Y),
+            ChunkSize(CHUNK_SIZE, CHUNK_SIZE),
+            TileSize(TILE_SIZE, TILE_SIZE),
+            TextureSize((N_TEXTURES as f32) * TILE_SIZE, TILE_SIZE),
         ),
         MAP_ID,
         TILES_LAYER_ID,
@@ -47,7 +47,7 @@ pub fn setup(
                     ..Default::default()
                 };
                 let _ = layer_builder
-                    .set_tile(UVec2::new(i, j), tile.into())
+                    .set_tile(TilePos(i, j), tile.into())
                     .expect("Couldn't set tile! :(");
             }
         }
@@ -55,7 +55,7 @@ pub fn setup(
 
     // Draw entities that have a sprite associated with them
     for (position, drawable) in drawable_query.iter() {
-        let position = UVec2::new(position.x, position.y);
+        let position = TilePos(position.x, position.y);
         let tile = Tile {
             texture_index: drawable.texture_index,
             ..Default::default()
@@ -66,7 +66,7 @@ pub fn setup(
     }
 
     // Build the layer
-    let layer_entity = map_query.build_layer(&mut commands, layer_builder, material_handle);
+    let layer_entity = map_query.build_layer(&mut commands, layer_builder, texture_handle);
 
     // Required to keep track of layers for a map internally.
     map.add_layer(&mut commands, TILES_LAYER_ID, layer_entity);

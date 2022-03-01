@@ -7,12 +7,12 @@ use crate::game::enemy::Enemy;
 use crate::game::states::GameState;
 use crate::game::tilemap::*;
 
-#[derive(Clone, Debug)]
+#[derive(Component)]
 pub struct LastUpdate {
     last_update: f64,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Component)]
 pub struct Player {}
 
 pub fn add(mut commands: Commands) {
@@ -36,7 +36,7 @@ fn try_to_move(
     map_query: &mut MapQuery,
 ) {
     let mut player_position = player_query
-        .single_mut()
+        .get_single_mut()
         .expect("There should always be exactly one player in the game!");
 
     let from = *player_position;
@@ -49,7 +49,7 @@ fn try_to_move(
         return;
     }
 
-    let to_tile = map_query.get_tile_entity(UVec2::new(to.x, to.y), MAP_ID, TILES_LAYER_ID);
+    let to_tile = map_query.get_tile_entity(TilePos(to.x, to.y), MAP_ID, TILES_LAYER_ID);
 
     if to_tile.is_ok() {
         for (enemy_id, enemy_position) in enemy_query.iter() {
@@ -83,7 +83,7 @@ pub fn movement(
     mut last_update_query: Query<&mut LastUpdate>,
 ) {
     let current_time = time.seconds_since_startup();
-    if let Ok(mut last_update) = last_update_query.single_mut() {
+    if let Ok(mut last_update) = last_update_query.get_single_mut() {
         if current_time - last_update.last_update > 0.0 {
             for key in keys.get_just_released() {
                 let delta = match key {
