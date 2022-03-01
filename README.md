@@ -5,6 +5,7 @@ A test roguelike game using the [Bevy engine](https://bevyengine.org/).
 ## Running
 
 If you don't have Rust, you can install it using [rustup](https://rustup.rs).
+On Debian based systems you can install the required packages using `apt install libasound2-dev libudev-dev`.
 Then run
 
 ```shell
