@@ -3,7 +3,7 @@ pub const MAP_ID: u16 = 0;
 pub const WALLS_LAYER_ID: u16 = 0;
 pub const OBJECTS_LAYER_ID: u16 = 1;
 pub const CHUNK_SIZE: u32 = 8;
-pub const TILE_SIZE: f32 = 32 as f32;
+pub const TILE_SIZE: f32 = 32_f32;
 pub const N_CHUNKS_X: u32 = 3;
 pub const N_CHUNKS_Y: u32 = 3;
 

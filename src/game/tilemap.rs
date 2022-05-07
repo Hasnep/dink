@@ -21,7 +21,7 @@ pub fn update_tilemap(
             {
                 let _ = map_query
                     .despawn_tile(&mut commands, tile_position, MAP_ID, OBJECTS_LAYER_ID)
-                    .expect(&format!("Couldn't despawn tile at ({},{}).", x, y));
+                    .unwrap_or_else(|_| panic!("Couldn't despawn tile at ({},{}).", x, y));
                 map_query.notify_chunk_for_tile(tile_position, MAP_ID, OBJECTS_LAYER_ID);
             }
         }
@@ -40,10 +40,12 @@ pub fn update_tilemap(
                 MAP_ID,
                 OBJECTS_LAYER_ID,
             )
-            .expect(&format!(
-                "Couldn't set the new tile at ({},{}).",
-                entity_position.x, entity_position.y
-            ));
+            .unwrap_or_else(|_| {
+                panic!(
+                    "Couldn't set the new tile at ({},{}).",
+                    entity_position.x, entity_position.y
+                )
+            });
         map_query.notify_chunk_for_tile(tile_position, MAP_ID, OBJECTS_LAYER_ID);
     }
 
@@ -54,8 +56,8 @@ pub fn update_tilemap(
 }
 
 pub fn is_in_bounds(position: IVec2) -> bool {
-    return position.x >= 0
+    position.x >= 0
         && position.y >= 0
         && position.x < (CHUNK_SIZE * N_CHUNKS_X) as i32
-        && position.y < (CHUNK_SIZE * N_CHUNKS_Y) as i32;
+        && position.y < (CHUNK_SIZE * N_CHUNKS_Y) as i32
 }

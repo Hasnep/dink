@@ -12,8 +12,8 @@ use crate::game::config::{
 
 pub fn add(mut commands: Commands, map_query: MapQuery) {
     let mut rng = rand::thread_rng();
-    let random_x = Uniform::from(0..(CHUNK_SIZE * N_CHUNKS_X ));
-    let random_y = Uniform::from(0..(CHUNK_SIZE * N_CHUNKS_Y ));
+    let random_x = Uniform::from(0..(CHUNK_SIZE * N_CHUNKS_X));
+    let random_y = Uniform::from(0..(CHUNK_SIZE * N_CHUNKS_Y));
 
     for _ in 1..10 {
         let x = random_x.sample(&mut rng);
@@ -25,7 +25,7 @@ pub fn add(mut commands: Commands, map_query: MapQuery) {
 
         if position_is_empty {
             commands.spawn_bundle((
-                Position { x: x, y: y },
+                Position { x, y },
                 EnemyTag,
                 Drawable {
                     texture_index: ENEMY_TEXTURE_INDEX,

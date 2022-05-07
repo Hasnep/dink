@@ -81,18 +81,14 @@ pub fn setup(
     // Create the objects layer
     let (objects_layer_builder, objects_layer_entity) = LayerBuilder::<TileBundle>::new(
         &mut commands,
-        default_layer_settings.clone(),
+        default_layer_settings,
         MAP_ID,
         OBJECTS_LAYER_ID,
     );
     // Required to keep track of layers for a map internally.
     map.add_layer(&mut commands, OBJECTS_LAYER_ID, objects_layer_entity);
     // Build the objects layer
-    let _ = map_query.build_layer(
-        &mut commands,
-        objects_layer_builder,
-        material_handle.clone(),
-    );
+    let _ = map_query.build_layer(&mut commands, objects_layer_builder, material_handle);
 
     // Create map
     commands
