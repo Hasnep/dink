@@ -13,8 +13,8 @@ pub fn destroy_tile(tile_position: Position, commands: &mut Commands, map_query:
 }
 
 pub fn move_tile(
-    from: Position,
-    to: Position,
+    from: &Position,
+    to: &Position,
     commands: &mut Commands,
     map_query: &mut MapQuery,
     texture_index: u16,

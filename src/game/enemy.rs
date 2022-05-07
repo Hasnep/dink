@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use bevy_ecs_tilemap::prelude::*;
 use rand::seq::SliceRandom;
 
-use crate::game::components::{CanPlayerMove, Drawable, Position};
+use crate::game::components::{Drawable, Position};
 use crate::game::config::*;
 use crate::game::states::GameState;
 use crate::game::tilemap::*;
@@ -32,11 +32,7 @@ pub fn movement(
         // Get spaces next to the enemy
         // let neighbours: Vec<&(IVec2, Option<Entity>)> =
 
-        let neighbours = map_query.get_neighbouring_pos(
-            TilePos(enemy_position.x, enemy_position.y),
-            MAP_ID,
-            TILES_LAYER_ID,
-        );
+        let neighbours = get_neighboring_pos(TilePos(enemy_position.x, enemy_position.y));
 
         let neighbours = neighbours
             .iter()
@@ -44,14 +40,13 @@ pub fn movement(
             .take(4)
             // Keep
             .map(|n| n.unwrap())
-            .collect::<Vec<Entity>>();
+            .collect::<Vec<TilePos>>();
 
-        let to_position_and_tile = neighbours.choose(&mut rand::thread_rng());
+        let to_position = neighbours.choose(&mut rand::thread_rng());
 
-        match to_position_and_tile {
-            Some(to_position_and_tile) => {
-                let from = *enemy_position;
-                let to = to_position_and_tile.0;
+        match to_position {
+            Some(to) => {
+                let from = enemy_position;
 
                 let to = Position {
                     x: to.0 as u32,
@@ -59,10 +54,16 @@ pub fn movement(
                 };
 
                 // Move the enemy
-                enemy_position.x = to.x;
-                enemy_position.y = to.y;
+                // enemy_position.x = to.x;
+                // enemy_position.y = to.y;
                 // Move the enemy's sprite
-                move_tile(from, to, &mut commands, &mut map_query, ENEMY_TEXTURE_INDEX);
+                move_tile(
+                    &from,
+                    &to,
+                    &mut commands,
+                    &mut map_query,
+                    ENEMY_TEXTURE_INDEX,
+                );
             }
             None => {}
         }

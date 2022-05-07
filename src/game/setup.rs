@@ -8,7 +8,6 @@ use crate::game::config::*;
 pub fn setup(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
-    mut materials: ResMut<Assets<ColorMaterial>>,
     mut map_query: MapQuery,
     drawable_query: Query<(&Position, &Drawable)>,
 ) {

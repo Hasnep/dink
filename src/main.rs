@@ -21,10 +21,10 @@ fn main() {
             ..Default::default()
         })
         .add_plugins(DefaultPlugins)
-        .add_system(exit_on_esc_system)
-        .add_plugin(LogDiagnosticsPlugin::default())
-        .add_plugin(FrameTimeDiagnosticsPlugin::default())
-        .add_plugin(TilemapPlugin)
-        .add_plugin(game::GamePlugin)
+        // .add_system(exit_on_esc_system)
+        // .add_plugin(LogDiagnosticsPlugin::default())
+        // .add_plugin(FrameTimeDiagnosticsPlugin::default())
+        // .add_plugin(TilemapPlugin)
+        // .add_plugin(game::GamePlugin)
         .run();
 }

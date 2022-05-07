@@ -35,11 +35,9 @@ fn try_to_move(
     commands: &mut Commands,
     map_query: &mut MapQuery,
 ) {
-    let mut player_position = player_query
-        .get_single_mut()
-        .expect("There should always be exactly one player in the game!");
+    let mut player_position = player_query.single_mut();
 
-    let from = *player_position;
+    let from = player_position;
     let to = Position {
         x: ((from.x as i32) + delta_x) as u32,
         y: ((from.y as i32) + delta_y) as u32,
@@ -64,11 +62,11 @@ fn try_to_move(
         destroy_tile(to, commands, map_query);
     } else {
         // If that space is empty then move the player
-        player_position.x = to.x;
-        player_position.y = to.y;
+        // player_position.x = to.x;
+        // player_position.y = to.y;
 
         println!("Moving from {},{} to {},{}", from.x, from.y, to.x, to.y);
-        move_tile(from, to, commands, map_query, PLAYER_TEXTURE_INDEX);
+        move_tile(&from, &to, commands, map_query, PLAYER_TEXTURE_INDEX);
     }
 }
 
@@ -83,31 +81,30 @@ pub fn movement(
     mut last_update_query: Query<&mut LastUpdate>,
 ) {
     let current_time = time.seconds_since_startup();
-    if let Ok(mut last_update) = last_update_query.get_single_mut() {
-        if current_time - last_update.last_update > 0.0 {
-            for key in keys.get_just_released() {
-                let delta = match key {
-                    KeyCode::Left => IVec2::new(-1, 0),
-                    KeyCode::Right => IVec2::new(1, 0),
-                    KeyCode::Up => IVec2::new(0, 1),
-                    KeyCode::Down => IVec2::new(0, -1),
-                    _ => IVec2::new(0, 0),
-                };
+    let mut last_update = last_update_query.single_mut();
+    if current_time - last_update.last_update > 0.0 {
+        for key in keys.get_just_released() {
+            let delta = match key {
+                KeyCode::Left => IVec2::new(-1, 0),
+                KeyCode::Right => IVec2::new(1, 0),
+                KeyCode::Up => IVec2::new(0, 1),
+                KeyCode::Down => IVec2::new(0, -1),
+                _ => IVec2::new(0, 0),
+            };
 
-                if delta.x != 0 || delta.y != 0 {
-                    let _did_move = try_to_move(
-                        delta.x,
-                        delta.y,
-                        player_query,
-                        enemy_query,
-                        &mut commands,
-                        &mut map_query,
-                    );
+            if delta.x != 0 || delta.y != 0 {
+                let _did_move = try_to_move(
+                    delta.x,
+                    delta.y,
+                    player_query,
+                    enemy_query,
+                    &mut commands,
+                    &mut map_query,
+                );
 
-                    game_state.replace(GameState::EnemyTurn).unwrap();
-                    last_update.last_update = current_time;
-                    return;
-                }
+                game_state.replace(GameState::EnemyTurn).unwrap();
+                last_update.last_update = current_time;
+                return;
             }
         }
     }
